@@ -4,9 +4,14 @@ extern crate gfx_window_glutin;
 extern crate glutin;
 extern crate specs;
 extern crate nalgebra;
+extern crate genmesh;
+extern crate rand;
 
 use gfx::traits::FactoryExt;
 use gfx::Device;
+
+use genmesh::{Triangulate, Vertices};
+use genmesh::generators::{SharedVertex, IndexedPolygon, Plane};
 
 pub type ColorFormat = gfx::format::Rgba8;
 pub type DepthFormat = gfx::format::DepthStencil;
@@ -66,9 +71,44 @@ fn main() {
         pipe::new()
     ).unwrap();
 
-    let (vertex_buffer, slice) = factory.create_vertex_buffer_with_slice(&SQUARE_VERTEX_DATA, SQUARE_INDEX_DATA);
 
-    // let view = nalgebra::new_identity::<nalgebra::Matrix4<f32>>(4);
+    let width = 32usize;
+    let height = 32usize;
+
+    let half_width = width / 2;
+    let half_height = height / 2;
+
+    let plane = Plane::subdivide(width, height);
+
+    let vertex_data: Vec<Vertex> = plane.shared_vertex_iter()
+        .map(|(raw_x, raw_y)| {
+            let vertex_x = half_width as f32 * raw_x;
+            let vertex_y = half_height as f32 * raw_y;
+
+            use rand::Rng;
+
+            let mut rng = rand::thread_rng();
+
+            let (a, b) = (rng.gen_range(0.0, 1.0), rng.gen_range(0.0, 1.0));
+
+            Vertex {
+                pos: [vertex_x + a, vertex_y + b, rng.gen_range(-a, b), 1.0],
+                color: [
+                    rng.gen_range(0.0, 1.0),
+                    rng.gen_range(0.0, 1.0),
+                    rng.gen_range(0.0, 1.0)
+                ],
+            }
+        })
+        .collect();
+
+    let index_data: Vec<u32> = plane.indexed_polygon_iter()
+        .triangulate()
+        .vertices()
+        .map(|i| i as u32)
+        .collect();
+
+    let (vertex_buffer, slice) = factory.create_vertex_buffer_with_slice(&vertex_data, &index_data[..]);
 
     let model = {
         use nalgebra::ToHomogeneous;
@@ -83,7 +123,7 @@ fn main() {
     let view = {
         use nalgebra::ToHomogeneous;
 
-        let eye = nalgebra::Point3::new(0.0, 0.0, -3.5);
+        let eye = nalgebra::Point3::new(0.0, 0.0, -95.0);
 
         let target = nalgebra::Point3::new(0.0, 0.0, 0.0);
 
