@@ -1,0 +1,14 @@
+[package]
+name = "civi"
+version = "0.1.0"
+authors = ["Kiley Owen <yelikdev@gmail.com>"]
+
+[dependencies]
+gfx = "*"
+gfx_window_glutin = "*"
+glutin = "*"
+specs = "*"
+nalgebra = "*"
+ncollide = "*"
+time = "*"
+rand = "*"
